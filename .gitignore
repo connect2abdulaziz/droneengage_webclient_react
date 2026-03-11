@@ -18,8 +18,6 @@ wiki/local_wiki
 /local
 # misc
 .DS_Store
-.env
-.env.local
 .env.development.local
 .env.test.local
 .env.production.local
@@ -32,3 +30,4 @@ HEFNY_README.txt
 HEFNY_DEPLOY.txt
 
 local/
+config.bat
