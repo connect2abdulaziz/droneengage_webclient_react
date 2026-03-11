@@ -387,8 +387,11 @@ class CAndruavAuth {
             this.m_username = p_userName;
             this.m_accesscode = p_accessCode;
 
-            // Plugin mode: don't send uid, plugin will provide its own partyId
-            const payload = fn_buildPluginSessionPayload(
+            // When talking directly to Auth server as a WebConnector,
+            // send full login payload including account and access code.
+            const payload = fn_buildLoginPayload(
+                p_userName,
+                p_accessCode,
                 this._m_ver,
                 js_localStorage.fn_getGroupName()
             );

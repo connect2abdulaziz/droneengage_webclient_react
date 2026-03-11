@@ -37,8 +37,17 @@ class ClssLoginControl extends React.Component {
 
     js_eventEmitter.fn_subscribe(js_event.EE_onSocketStatus, this, this.fn_onSocketStatus);
     js_eventEmitter.fn_subscribe(js_event.EE_Auth_Login_In_Progress, this, this.fn_onAuthInProgress);
+    js_eventEmitter.fn_subscribe(js_event.EE_Auth_Logined, this, this.fn_onAuthLogined);
     js_eventEmitter.fn_subscribe(js_event.EE_Auth_BAD_Logined, this, this.fn_onAuthBad);
 
+  }
+
+  fn_onAuthLogined(me) {
+    if (me.m_flag_mounted === false) return;
+    me.setState({
+      is_connected: CONST_NOT_CONNECTION_ONLINE,
+      m_update: me.state.m_update + 1,
+    });
   }
 
 
@@ -49,13 +58,21 @@ class ClssLoginControl extends React.Component {
     if (me.m_flag_mounted === false) return;
 
     if (params.status === js_andruavMessages.CONST_SOCKET_STATUS_REGISTERED) {
-      me.state.is_connected = CONST_NOT_CONNECTION_ONLINE;
-      me.state.username = me.txtUnitIDRef.current.value;
+      me.setState({
+        is_connected: CONST_NOT_CONNECTION_ONLINE,
+        m_update: me.state.m_update + 1,
+      });
+      me.state.username = me.txtUnitIDRef.current ? me.txtUnitIDRef.current.value : '';
       js_speak.fn_speak(t('connectedSpeech')); // Translate "Connected"
-      me.setState({ m_update: me.state.m_update + 1 });
     } else {
-      me.state.is_connected = CONST_NOT_CONNECTION_OFFLINE;
-      me.setState({ m_update: me.state.m_update + 1 });
+      // In WebConnector mode, keep "connected" UI after auth success; only logout clears it.
+      // Otherwise socket fail/disconnect would flip UI back to Login.
+      const usePlugin = js_localStorage.fn_getWebConnectorEnabled() === true;
+      if (usePlugin && me.state.is_connected === CONST_NOT_CONNECTION_ONLINE) return;
+      me.setState({
+        is_connected: CONST_NOT_CONNECTION_OFFLINE,
+        m_update: me.state.m_update + 1,
+      });
     }
   }
 
@@ -102,6 +119,7 @@ class ClssLoginControl extends React.Component {
   componentWillUnmount() {
     js_eventEmitter.fn_unsubscribe(js_event.EE_onSocketStatus, this);
     js_eventEmitter.fn_unsubscribe(js_event.EE_Auth_Login_In_Progress, this);
+    js_eventEmitter.fn_unsubscribe(js_event.EE_Auth_Logined, this);
     js_eventEmitter.fn_unsubscribe(js_event.EE_Auth_BAD_Logined, this);
   }
 
@@ -159,6 +177,9 @@ class ClssLoginControl extends React.Component {
     }
 
     if (queryParams.connect !== undefined) {
+      this.clickConnect(null);
+    } else if (usePlugin === true && js_localStorage.fn_getEmail() && js_localStorage.fn_getAccessCode()) {
+      // WebConnector with saved credentials: auto-login after refresh so UI shows connected
       this.clickConnect(null);
     }
 
